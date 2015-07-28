@@ -3,8 +3,8 @@ open System.Collections.Generic;
 
 type GameState =
     | GameComplete
-    | NewFrame of int 
-    | InFrame of int * int
+    | NewFrame of int list * int 
+    | InFrame of int list * int * int
 
 type Game() = 
     let sumFirstSplitRemaining n items = 
@@ -23,28 +23,28 @@ type Game() =
 
    
 
-    let calculatePointsForFrameAndAdvanceGameState throws frameNumber : int list * int * GameState  =
+    let calculatePointsForFrameAndAdvanceGameState throws frameNumber : int * GameState  =
         let (|Spare|_|) throws = 
             let calculatePoints remainingThrows =
                 10 + sumFirst 1 remainingThrows
 
             match throws with 
                 | firstThrow::secondThrow::remaining when firstThrow + secondThrow = 10 -> 
-                    Some (remaining, (calculatePoints remaining), NewFrame (frameNumber+1))
+                    Some ((calculatePoints remaining), NewFrame (remaining, frameNumber+1))
                 | _ -> None
 
         let (|Strike|_|) throws = 
             let calculatePoints remainingThrows =
                 10 + sumFirst 2 remainingThrows
             match throws with 
-                | 10::remaining -> Some (remaining, (calculatePoints remaining), NewFrame (frameNumber + 1))
+                | 10::remaining -> Some ((calculatePoints remaining), NewFrame (remaining,frameNumber + 1))
                 | _ -> None
 
         let (|NormalPoints|) throws = 
             match throws with
-            | first::second::remaining -> remaining, first + second, NewFrame (frameNumber + 1)
-            | first::[] -> [], first, InFrame (frameNumber,first)
-            | [] -> [], 0, NewFrame frameNumber
+            | first::second::remaining -> first + second, NewFrame (remaining,frameNumber + 1)
+            | first::[] -> first, InFrame ([],frameNumber,first)
+            | [] -> 0, NewFrame ([], frameNumber)
 
 
         match throws with
@@ -60,14 +60,18 @@ type Game() =
         if not isFinalFrame then
             result
         else
-            let remaining,points,_ = result
-            [], points, GameComplete
+            let points,_ = result
+            points, GameComplete
 
     let iterFrames tillFrame throws =
         let rec iter frameIterator throws =
             if frameIterator > tillFrame then 0
             else
-                let remainingThrows, points,_ = calculatePointsForFrame throws frameIterator
+                let points, state = calculatePointsForFrame throws frameIterator
+                let remainingThrows = match state with
+                    |GameComplete -> []
+                    |NewFrame (r,frame)-> r
+                    |InFrame (r,frame,point) -> r
                 points + (iter (frameIterator + 1) remainingThrows)
         iter 1 throws
 
@@ -87,16 +91,24 @@ type Game() =
     let getGameState throws = 
         if isGameComplete throws then GameComplete
         else
-            NewFrame 1
+            let rec iter throws framenumber =
+                let points,state = calculatePointsForFrameAndAdvanceGameState throws framenumber
+                match state with
+                |GameComplete -> GameComplete
+                |InFrame (remaining,frame,points) -> if remaining = [] then state else iter remaining frame
+                |NewFrame (remaining,frame) -> if remaining = [] then state else iter remaining frame
+            iter throws 1 
         
 
     let gooi throws pins : int list = 
+        if pins < 0 || pins > 10 then invalidArg "pins" "invalid number of pins"
+
         let gameState = getGameState throws
 
         match gameState with
             | GameComplete -> invalidArg "pins" "game is complete"
-            | NewFrame frameNumber -> appendThrownPins throws pins
-            | InFrame (frameNumber,previousPins) ->
+            | NewFrame (remaining,frameNumber) -> appendThrownPins throws pins
+            | InFrame (remaining,frameNumber,previousPins) ->
                 if previousPins + pins > 10 then invalidArg "pins" "invalid number of pins"
                 else
                     appendThrownPins throws pins
