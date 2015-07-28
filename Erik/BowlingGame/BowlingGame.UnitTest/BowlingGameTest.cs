@@ -131,8 +131,8 @@ namespace BowlingGame.UnitTest {
             Assert.AreEqual(0, game.CurrentScore);
         }
 
-        private static Game GetGame() {
-            return new Game();
+        private static Game2 GetGame() {
+            return new Game2();
         }
 
         [TestMethod]
@@ -368,11 +368,11 @@ namespace BowlingGame.UnitTest {
             game.Gooi(5);
         }
 
-        private void Gooi9Frames0(Game game) {
+        private void Gooi9Frames0(Game2 game) {
             GooiXFrames0(game, 9);
         }
 
-        private void GooiXFrames0(Game game, int x) {
+        private void GooiXFrames0(Game2 game, int x) {
             for (var i = 0; i < (x * 2); i++) {
                 game.Gooi(0);
             }

@@ -22,12 +22,11 @@
         let mutable throws = throws
         
         /// Creates a list of Frames based on the list of pins thrown 
-        static let createGame (throws: int list) = 
+        let createGame (throws: int list) = 
             /// Checks that no throw is invalid by itself
-            let rec checkThrows = function
-                | [] -> ()
-                | h::t when h < 0 || h > 10 -> invalidArg "throws" "invalid number of pins" 
-                | h::t -> checkThrows t
+            let checkThrows throws = 
+                for throw in throws do
+                    if (throw < 0 || throw > 10) then invalidArg "throws" "invalid number of pins" 
                 
             /// Creates a Frame by looking at the next couple of throws in list of throws
             let createFrame throws = 
@@ -49,10 +48,10 @@
                 | a::[] -> (UnfinishedFrame(a), [])
 
             let rec createGame' nacc acc (throws : int list) =
-                match nacc, acc, throws with
-                | 10, NormalFrame(_,_)::_ , _::t -> invalidArg "throws" "too many throws" 
-                | 10, Spare(_)::_ ,         _::_::t -> invalidArg "throws" "too many throws" 
-                | 10, Strike(_,_)::_ ,      _::_::_::t -> invalidArg "throws" "too many throws" 
+                match (nacc, acc, throws) with
+                | 10, NormalFrame(_,_)::_  , _::t -> invalidArg "throws" "too many throws" 
+                | 10, Spare(_)::_          , _::_::t -> invalidArg "throws" "too many throws" 
+                | 10, Strike(_,_)::_       , _::_::_::t -> invalidArg "throws" "too many throws" 
                 | 10, _, _ -> List.rev acc // don't add more Frames after 10th frame
                 | _, _, [] -> List.rev acc
                 | _ -> 
@@ -92,3 +91,31 @@
         member this.Gooi (p: int) = 
             throws <- throws @ [p]
             frames <- throws |> createGame
+
+    type Game2() =
+        let mutable throws = []
+
+        let rec throwsPerFrame throws =
+            match throws with
+            | [] -> [0]
+            | throw1::[] -> [throw1]
+            | throw1::throw2::tail -> [throw1+throw2] @ (throwsPerFrame tail)
+
+        let scoreVoorFrame frame =
+            throwsPerFrame throws
+            |> Seq.nth (frame-1) 
+            
+              
+//            let aantalThrows = (Seq.min [Seq.length throws;(frame * 2)])
+//            throws
+//            |> Seq.take aantalThrows
+//            |> Seq.sum 
+
+        member this.Gooi(pins: int) =
+            throws <-  throws @ [pins]
+
+        member this.CurrentScore  = Seq.sum throws
+
+        member this.ScoreVoorFrame frame = scoreVoorFrame frame
+            
+//            List.nth throws ((frame-1)/2)  + List.nth throws ((frame-1)/2+1) 
