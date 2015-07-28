@@ -92,30 +92,95 @@
             throws <- throws @ [p]
             frames <- throws |> createGame
 
-    type Game2() =
-        let mutable throws = []
+    
+    module BowlingGame =
+        let calculatePointsAndAdvanceToNextFrame throws =
+            let sumFirstSplitRemaining n items =
+                let toTake = (min n (Seq.length items))
+                
+                let sum = 
+                    items
+                    |> Seq.take toTake
+                    |> Seq.fold (+) 0
 
-        let rec throwsPerFrame throws =
+                sum,Seq.skip toTake items |> Seq.toList
+
+            let sumFirst n items =
+                let sum,items = sumFirstSplitRemaining n items
+                sum
+                    
+            let (|Spare|_|) throws = 
+                let calculatePoints remainingThrows =
+                    10 + sumFirst 1 remainingThrows
+
+                match throws with 
+                    | firstThrow::secondThrow::remaining when firstThrow + secondThrow = 10 -> 
+                        Some (remaining, (calculatePoints remaining))
+                    | _ -> None
+
+            let (|Strike|_|) throws = 
+                let calculatePoints remainingThrows =
+                    10 + sumFirst 2 remainingThrows
+                match throws with 
+                    | 10::remaining -> Some (remaining, (calculatePoints remaining))
+                    | _ -> None
+
+            let (|NormalPoints|) throws = 
+                let sum, remainingThrows = sumFirstSplitRemaining 2 throws
+                remainingThrows,sum
+
+
             match throws with
-            | [] -> [0]
-            | throw1::[] -> [throw1]
-            | throw1::throw2::tail -> [throw1+throw2] @ (throwsPerFrame tail)
+                | Strike strike -> strike
+                | Spare spare -> spare
+                | NormalPoints normal -> normal
 
-        let scoreVoorFrame frame =
-            throwsPerFrame throws
-            |> Seq.nth (frame-1) 
+        let calculatePointsForFrame throws frameNumber =
+            let isFinalFrame = frameNumber = 10
+
+            let result = calculatePointsAndAdvanceToNextFrame throws
+
+            if not isFinalFrame then
+                result
+            else
+                let remaining,points = result
+                [], points
+
+        let iterFrames tillFrame throws =
+            let rec iter frameIterator throws =
+                if frameIterator > tillFrame then 0
+                else
+                    let remainingThrows, points = calculatePointsForFrame throws frameIterator
+                    points + (iter (frameIterator + 1) remainingThrows)
+            iter 1 throws
+
+        let scoreForFrame forFrame throws =
+            iterFrames forFrame throws
+
+        let currentScore throws = scoreForFrame 20 throws
+
+        let appendThrownPins throws pins =
+            throws @ [pins]
+
+        let isGameComplete throws = 
+            let score1 = currentScore throws
+            let score2 = currentScore (appendThrownPins throws 5)
+            score1=score2
+
+        let gooi throws pins : int list = 
+            if isGameComplete throws then invalidArg "pins" "game is complete"
+            else
+                appendThrownPins throws pins
             
-              
-//            let aantalThrows = (Seq.min [Seq.length throws;(frame * 2)])
-//            throws
-//            |> Seq.take aantalThrows
-//            |> Seq.sum 
 
-        member this.Gooi(pins: int) =
-            throws <-  throws @ [pins]
+        type Game2() =
+            let mutable throws = []
 
-        member this.CurrentScore  = Seq.sum throws
+            member this.Gooi(pins: int) =
+                throws <- gooi throws pins
 
-        member this.ScoreVoorFrame frame = scoreVoorFrame frame
+            member this.CurrentScore  = currentScore throws // we hebben nog geen logica om het laatste frame te berekenen
+
+            member this.ScoreVoorFrame frame = scoreForFrame frame throws
             
-//            List.nth throws ((frame-1)/2)  + List.nth throws ((frame-1)/2+1) 
+    //            List.nth throws ((frame-1)/2)  + List.nth throws ((frame-1)/2+1) 

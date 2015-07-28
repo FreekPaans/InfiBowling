@@ -5,6 +5,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using BowlingGame;
+using static BowlingGame.BowlingGame;
 
 namespace BowlingGame.UnitTest {
 
@@ -239,11 +240,21 @@ namespace BowlingGame.UnitTest {
         }
 
         [TestMethod]
+        public void als_we_een_strike_gooien_en_dan_0_en_dan_5_dan_is_de_score_voor_frame_2_5() {
+            var game = GetGame();
+            game.Gooi(10);
+            game.Gooi(0);
+            game.Gooi(5);
+            game.Gooi(5);
+            Assert.AreEqual(20,game.ScoreVoorFrame(2));
+        }
+
+        [TestMethod]
         public void als_we_een_strike_gooien_en_dan_3_dan_is_de_current_score_16() {
             var game = GetGame();
             game.Gooi(10);
             game.Gooi(3);
-            Assert.AreEqual(16, game.CurrentScore);
+            Assert.AreEqual(16,game.CurrentScore);
         }
 
         [TestMethod]
@@ -252,7 +263,7 @@ namespace BowlingGame.UnitTest {
             game.Gooi(10);
             game.Gooi(3);
             game.Gooi(4);
-            Assert.AreEqual(17, game.ScoreVoorFrame(1));
+            Assert.AreEqual(17,game.ScoreVoorFrame(1));
         }
 
         [TestMethod]
@@ -261,7 +272,7 @@ namespace BowlingGame.UnitTest {
             game.Gooi(10);
             game.Gooi(3);
             game.Gooi(4);
-            Assert.AreEqual(24, game.CurrentScore);
+            Assert.AreEqual(24,game.CurrentScore);
         }
 
         [TestMethod]
@@ -269,7 +280,7 @@ namespace BowlingGame.UnitTest {
             var game = GetGame();
             game.Gooi(10);
             game.Gooi(10);
-            Assert.AreEqual(20, game.ScoreVoorFrame(1));
+            Assert.AreEqual(20,game.ScoreVoorFrame(1));
         }
 
         [TestMethod]
@@ -278,7 +289,7 @@ namespace BowlingGame.UnitTest {
             game.Gooi(10);
             game.Gooi(10);
             game.Gooi(10);
-            Assert.AreEqual(30, game.ScoreVoorFrame(1));
+            Assert.AreEqual(30,game.ScoreVoorFrame(1));
         }
 
         [TestMethod]
@@ -286,7 +297,7 @@ namespace BowlingGame.UnitTest {
             var game = GetGame();
             game.Gooi(10);
             game.Gooi(10);
-            Assert.AreEqual(30, game.CurrentScore);
+            Assert.AreEqual(30,game.CurrentScore);
         }
 
         [TestMethod]
@@ -294,7 +305,7 @@ namespace BowlingGame.UnitTest {
             var game = GetGame();
             game.Gooi(10);
             game.Gooi(10);
-            Assert.AreEqual(30, game.ScoreVoorFrame(2));
+            Assert.AreEqual(30,game.ScoreVoorFrame(2));
         }
 
         [TestMethod]
@@ -304,7 +315,7 @@ namespace BowlingGame.UnitTest {
             game.Gooi(10);
             game.Gooi(10);
             game.Gooi(10);
-            Assert.AreEqual(30, game.CurrentScore);
+            Assert.AreEqual(30,game.CurrentScore);
         }
 
         [TestMethod]
@@ -314,7 +325,7 @@ namespace BowlingGame.UnitTest {
             game.Gooi(3);
             game.Gooi(7);
             game.Gooi(3);
-            Assert.AreEqual(13, game.CurrentScore);
+            Assert.AreEqual(13,game.CurrentScore);
         }
 
         [TestMethod]
@@ -324,7 +335,7 @@ namespace BowlingGame.UnitTest {
             game.Gooi(3);
             game.Gooi(7);
             game.Gooi(3);
-            Assert.AreEqual(13, game.ScoreVoorFrame(10));
+            Assert.AreEqual(13,game.ScoreVoorFrame(10));
         }
 
         [TestMethod]
@@ -334,37 +345,37 @@ namespace BowlingGame.UnitTest {
             game.Gooi(3);
             game.Gooi(7);
             game.Gooi(10);
-            Assert.AreEqual(20, game.CurrentScore);
+            Assert.AreEqual(20,game.CurrentScore);
         }
 
         [TestMethod]
         public void als_we_een_8_frames_nul_gooien_dan_10_10_10_10_dan_is_de_current_score_60() {
             var game = GetGame();
-            GooiXFrames0(game, 8);
+            GooiXFrames0(game,8);
             game.Gooi(10);
             game.Gooi(10);
             game.Gooi(10);
             game.Gooi(10);
-            Assert.AreEqual(60, game.CurrentScore);
+            Assert.AreEqual(60,game.CurrentScore);
         }
 
         [TestMethod]
         public void als_we_een_8_frames_nul_gooien_dan_10_10_10_10_dan_is_de_score_voor_frame_9_30_en_voor_frame_10_60() {
             var game = GetGame();
-            GooiXFrames0(game, 8);
+            GooiXFrames0(game,8);
             game.Gooi(10);
             game.Gooi(10);
             game.Gooi(10);
             game.Gooi(10);
-            Assert.AreEqual(30, game.ScoreVoorFrame(9));
-            Assert.AreEqual(60, game.ScoreVoorFrame(10));
+            Assert.AreEqual(30,game.ScoreVoorFrame(9));
+            Assert.AreEqual(60,game.ScoreVoorFrame(10));
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void als_we_in_een_afgesloten_game_gooien_dan_krijgen_we_een_invalid_operation_exception() {
             var game = GetGame();
-            GooiXFrames0(game, 10);
+            GooiXFrames0(game,10);
             game.Gooi(5);
         }
 
