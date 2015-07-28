@@ -64,15 +64,17 @@ type Game() =
             points, GameComplete
 
     let iterFrames tillFrame throws =
+        let getRemainingThrows gameState = 
+            match gameState with
+                |GameComplete -> []
+                |NewFrame (r,_)-> r
+                |InFrame (r,_,_) -> r
+
         let rec iter frameIterator throws =
             if frameIterator > tillFrame then 0
             else
                 let points, state = calculatePointsForFrame throws frameIterator
-                let remainingThrows = match state with
-                    |GameComplete -> []
-                    |NewFrame (r,frame)-> r
-                    |InFrame (r,frame,point) -> r
-                points + (iter (frameIterator + 1) remainingThrows)
+                points + (iter (frameIterator + 1) (getRemainingThrows state))
         iter 1 throws
 
     let scoreForFrame forFrame throws =
