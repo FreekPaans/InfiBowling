@@ -33,3 +33,10 @@
 /Freek-f#/BowlingGame/BowlingGame.UnitTest/bin
 /Freek-f#/BowlingGame/BowlingGame/obj
 /Freek-f#/BowlingGame/BowlingGame/bin
+/Jiri-F#/BowlingGame/BowlingGame.UnitTest/bin
+/Jiri-F#/BowlingGame/BowlingGame.UnitTest/obj
+/Jiri-F#/BowlingGame/BowlingGame/bin
+/Jiri-F#/BowlingGame/BowlingGame/obj
+*.suo
+*.user
+*.coverage
