@@ -69,12 +69,6 @@ type Game() =
             | 10::remaining -> Some ((calculateStrikePoints remaining),remaining,isFrameComplete)
             | _ -> None
 
-        let matchNormalThrow throws nextFrame =
-            match throws with
-            | first::second::remaining -> updateGameState (first + second) (nextFrame remaining)
-            | first::[] -> updateGameState first (InFrame ([],frameNumber,first))
-            | [] -> frames, (InFrame([],frameNumber,0))
-
         let (|NormalPoints|) throws =
             match throws with
             | first::second::remaining -> (first + second),remaining,true
