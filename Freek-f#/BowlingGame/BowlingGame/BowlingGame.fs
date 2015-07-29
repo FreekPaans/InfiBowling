@@ -45,20 +45,28 @@ type Game() =
         let updateGameState pointsForFrame nextState =
             pointsForFrame::frames,nextState
 
-        let matchSpare throws nextFrame = 
+        let (|Spare|_|) throws = 
             let calculateSparePoints remainingThrows =
                 10 + sumFirst 1 remainingThrows
+
+            let isFrameComplete = 
+                (Seq.length throws) >= 3
+
             match throws with 
             | firstThrow::secondThrow::remaining 
                 when firstThrow + secondThrow = 10 -> 
-                Some (updateGameState (calculateSparePoints remaining) (nextFrame remaining))                       
+                Some ((calculateSparePoints remaining),remaining, isFrameComplete)                       
             | _ -> None
 
-        let matchStrike throws nextFrame = 
+        let (|Strike|_|) throws = 
             let calculateStrikePoints remainingThrows =
                 10 + sumFirst 2 remainingThrows
+
+            let isFrameComplete = 
+                    (Seq.length throws) >= 3
+
             match throws with 
-            | 10::remaining -> Some (updateGameState (calculateStrikePoints remaining) (nextFrame remaining))
+            | 10::remaining -> Some ((calculateStrikePoints remaining),remaining,isFrameComplete)
             | _ -> None
 
         let matchNormalThrow throws nextFrame =
@@ -67,57 +75,30 @@ type Game() =
             | first::[] -> updateGameState first (InFrame ([],frameNumber,first))
             | [] -> frames, (InFrame([],frameNumber,0))
 
-        let advanceStateFinalFrame gameState =
-            let advanceFrameState isFrameComplete remainingThrows = 
-                if isFrameComplete then
-                    GameComplete
-                else
-                    InFrame(remainingThrows,frameNumber,0)       
-
-            let (|Spare|_|) throws = 
-                let isFrameComplete = 
-                    (Seq.length throws) = 3
-
-                let nextFrameState remainingThrows =
-                    advanceFrameState isFrameComplete remainingThrows
-
-                matchSpare throws nextFrameState
-
-            let (|Strike|_|) throws = 
-                let isFrameComplete = 
-                    (Seq.length throws) = 3
-
-                let nextFrameState remainingThrows =
-                    advanceFrameState isFrameComplete remainingThrows
-
-                matchStrike throws nextFrameState
-
-            let (|NormalPoints|) throws = 
-                matchNormalThrow throws (fun remaining->GameComplete)
-
-
+        let (|NormalPoints|) throws =
             match throws with
-                | Strike strike -> strike
-                | Spare spare -> spare
-                | NormalPoints normal -> normal
+            | first::second::remaining -> (first + second),remaining,true
+            | first::[] -> first,[],false
+            | [] -> 0,[],false
+
+        let advanceStateFinalFrame gameState =
+            match throws with
+                | Strike(framePoints,remaining,true) -> updateGameState framePoints GameComplete
+                | Strike(framePoints,remaining,false) -> updateGameState framePoints (InFrame(remaining,frameNumber,0))
+                | Spare (framePoints,remaining,true) -> updateGameState framePoints GameComplete
+                | Spare (framePoints,remaining,false) -> updateGameState framePoints (InFrame(remaining,frameNumber,0))
+                | NormalPoints (points,remaining,true) -> updateGameState points GameComplete
+                | NormalPoints (points,remaining,false) -> updateGameState points (InFrame(remaining,frameNumber,points))
 
         let advanceStateNormalFrame gameState =
             let completeTheFrame remainingThrows = 
                 InFrame(remainingThrows,frameNumber+1,0)
-            
-            let (|Spare|_|) throws = 
-                matchSpare throws completeTheFrame
-
-            let (|Strike|_|) throws = 
-                matchStrike throws completeTheFrame
-
-            let (|NormalPoints|) throws = 
-                matchNormalThrow throws completeTheFrame
 
             match throws with
-                | Strike strike -> strike
-                | Spare spare -> spare
-                | NormalPoints normal -> normal
+                | Strike (points,remaining,_) -> updateGameState points (completeTheFrame remaining)
+                | Spare (points,remaining,_) -> updateGameState points (completeTheFrame remaining)
+                | NormalPoints (points,remaining,true)-> updateGameState points (completeTheFrame remaining)
+                | NormalPoints (points,remaining,false)-> updateGameState points (InFrame (remaining,frameNumber,points))
 
         let isFinalFrame = frameNumber = 10
 
