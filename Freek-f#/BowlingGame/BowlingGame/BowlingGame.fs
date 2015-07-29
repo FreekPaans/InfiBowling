@@ -39,9 +39,6 @@ type Game() =
         | GameComplete -> frames,[],10
         | InFrame(throws,frameNumber,_) -> frames,throws,frameNumber
 
-
-    
-
     let advanceState gameState  =
         let frames,throws,frameNumber = frameState gameState
 
@@ -64,7 +61,7 @@ type Game() =
             | 10::remaining -> Some (updateGameState (calculateStrikePoints remaining) (nextFrame remaining))
             | _ -> None
 
-        let matchNormalPoints throws nextFrame =
+        let matchNormalThrow throws nextFrame =
             match throws with
             | first::second::remaining -> updateGameState (first + second) (nextFrame remaining)
             | first::[] -> updateGameState first (InFrame ([],frameNumber,first))
@@ -96,7 +93,7 @@ type Game() =
                 matchStrike throws nextFrameState
 
             let (|NormalPoints|) throws = 
-                matchNormalPoints throws (fun remaining->GameComplete)
+                matchNormalThrow throws (fun remaining->GameComplete)
 
 
             match throws with
@@ -115,7 +112,7 @@ type Game() =
                 matchStrike throws completeTheFrame
 
             let (|NormalPoints|) throws = 
-                matchNormalPoints throws completeTheFrame
+                matchNormalThrow throws completeTheFrame
 
             match throws with
                 | Strike strike -> strike
