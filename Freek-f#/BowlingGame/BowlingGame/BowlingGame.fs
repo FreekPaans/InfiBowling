@@ -119,8 +119,6 @@ type Game() =
                 | Spare spare -> spare
                 | NormalPoints normal -> normal
 
-        let frames,throws,frameNumber = frameState gameState
-
         let isFinalFrame = frameNumber = 10
 
         if isFinalFrame then
