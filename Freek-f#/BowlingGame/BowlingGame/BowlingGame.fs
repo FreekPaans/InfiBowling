@@ -5,7 +5,7 @@ type Framenumber = int
 type FirstThrowPins = int
 type RemainingThrows = int list
 
-type CurrentFrameState =
+type private CurrentFrameState =
     | GameComplete
     | NewFrame of RemainingThrows * Framenumber 
     | InFrame of RemainingThrows * Framenumber * FirstThrowPins
@@ -33,68 +33,72 @@ type Game() =
         let sum,items = sumFirstSplitRemaining n items
         sum
 
-    let advanceState (currentState : GameState) : GameState  =
-        let frames,frameState = currentState
+    let frameState gameState = 
+        let frames,frameState = gameState
 
-        let throws,frameNumber = 
-            match frameState with
-            | GameComplete -> [],10
-            | NewFrame(throws,frameNumber) -> throws,frameNumber
-            | InFrame(throws,frameNumber,_) -> throws,frameNumber
+        match frameState with
+        | GameComplete -> frames,[],10
+        | NewFrame(throws,frameNumber) -> frames,throws,frameNumber
+        | InFrame(throws,frameNumber,_) -> frames,throws,frameNumber
 
-        let isLastFrame = frameNumber = 10
+    let advanceState gameState  =
+        let frames,throws,frameNumber = frameState gameState
 
-        let getNextFrameState remaining = 
-            if isLastFrame then GameComplete else NewFrame(remaining,frameNumber+1)
+        let isFinalFrame = frameNumber = 10
+
+        let completeTheFrame remainingThrows = 
+            if isFinalFrame then 
+                GameComplete 
+            else 
+                NewFrame(remainingThrows,frameNumber+1)
+
+        let advanceFrameState isFrameComplete remainingThrows = 
+            if isFrameComplete then
+                completeTheFrame remainingThrows
+            else
+                InFrame(remainingThrows,frameNumber,0)       
+
+        let updateGameState pointsForFrame nextState =
+            pointsForFrame::frames,nextState
 
         let (|Spare|_|) throws = 
             let calculatePoints remainingThrows =
                 10 + sumFirst 1 remainingThrows
 
+            let isFrameComplete remainingThrows = (not isFinalFrame) || (Seq.length remainingThrows) = 1
+
             let nextFrameState remainingThrows =
-                if isLastFrame then
-                    if (Seq.length remainingThrows) = 1 then
-                        getNextFrameState remainingThrows
-                    else
-                        InFrame(remainingThrows,frameNumber,0)    
-                else
-                    getNextFrameState remainingThrows
+                advanceFrameState (isFrameComplete remainingThrows) remainingThrows
 
             match throws with 
                 | firstThrow::secondThrow::remaining when firstThrow + secondThrow = 10 -> 
-                    Some ((calculatePoints remaining)::frames, nextFrameState remaining)                       
+                    Some (updateGameState (calculatePoints remaining) (nextFrameState remaining))                       
                 | _ -> None
 
         let (|Strike|_|) throws = 
             let calculatePoints remainingThrows =
                 10 + sumFirst 2 remainingThrows
 
+            let isFrameComplete remainingThrows = (not isFinalFrame || (Seq.length remainingThrows) = 2)
+
             let nextFrameState remainingThrows =
-                if isLastFrame then
-                    if (Seq.length remainingThrows) = 2 then
-                        getNextFrameState remainingThrows
-                    else
-                        InFrame(remainingThrows,frameNumber,0)        
-                else
-                    getNextFrameState remainingThrows
+                advanceFrameState (isFrameComplete remainingThrows) remainingThrows
 
             match throws with 
-                | 10::remaining -> Some ((calculatePoints remaining)::frames, nextFrameState remaining)
+                | 10::remaining -> Some (updateGameState (calculatePoints remaining) (nextFrameState remaining))
                 | _ -> None
 
         let (|NormalPoints|) throws = 
             match throws with
-            | first::second::remaining -> (first + second)::frames, getNextFrameState remaining
-            | first::[] -> first::frames, InFrame ([],frameNumber,first)
-            | [] -> frames, NewFrame([],frameNumber)
+            | first::second::remaining -> updateGameState (first + second) (completeTheFrame remaining)
+            | first::[] -> updateGameState first (InFrame ([],frameNumber,first))
+            | [] -> frames, (NewFrame([],frameNumber))
 
 
         match throws with
             | Strike strike -> strike
             | Spare spare -> spare
             | NormalPoints normal -> normal
-
-
 
     let newGame throws = [],NewFrame(throws,1)
 

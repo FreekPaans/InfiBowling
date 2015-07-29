@@ -81,7 +81,6 @@ namespace BowlingGame.UnitTest {
         [ExpectedException(typeof(ArgumentException))]
         public void gegeven_het_spel_is_afgelopen_dan_kunnen_we_niet_meer_gooien() {
             var game = GetAfgelopenSpel();
-
             game.Gooi(10);
         }
 
