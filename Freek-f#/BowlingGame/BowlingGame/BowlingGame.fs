@@ -115,6 +115,7 @@ type Game() =
 
             match currentFrameState with
             | GameComplete -> gameState
+            | GameActive(InFrame ([],_,_)) ->gameState
             | GameActive activeFrameState -> 
                 let updateGameState points nextFrameState =
                     (points::frames),nextFrameState
@@ -125,7 +126,6 @@ type Game() =
 
                 match nextFrameState with
                 |GameComplete
-                |GameActive(InFrame ([],_,_)) ->nextState
                 |GameActive(_) -> iter nextState
 
         iter (newGame throws)
