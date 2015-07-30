@@ -5,10 +5,13 @@ type Framenumber = int
 type FirstThrowPins = int
 type RemainingThrows = int list
 
-type private CurrentFrameState =
-    | GameComplete
+type private ActiveFrame =
     | InFrame of RemainingThrows * Framenumber * FirstThrowPins
     | FinalFrameExtraBalls of RemainingThrows
+
+type private CurrentFrameState =
+    | GameComplete
+    | GameActive of ActiveFrame
 
 type FramePoints = int
 
@@ -37,19 +40,16 @@ type Game() =
         let sum,items = sumFirstSplitRemaining n items
         sum
 
-    let frameState gameState = 
-        let frames,frameState = gameState
 
-        match frameState with
-        | GameComplete -> frames,[],10
-        | InFrame(throws,frameNumber,_) -> frames,throws,frameNumber
-        | FinalFrameExtraBalls(throws)->frames,throws,10
+    let advanceState (gameState:ActiveFrame) : FramePoints*CurrentFrameState =
 
-    let advanceState gameState  =
-        let frames,throws,frameNumber = frameState gameState
+        let throws,frameNumber =
+            match gameState with
+            | InFrame (throws, frameNumber, _)-> throws,frameNumber
+            | FinalFrameExtraBalls throws -> throws,10
 
         let updateGameState pointsForFrame nextState =
-            pointsForFrame::frames,nextState
+            pointsForFrame,nextState
 
         let (|Spare|_|) throws = 
             let calculateSparePoints remainingThrows =
@@ -84,21 +84,21 @@ type Game() =
         let advanceStateFinalFrame gameState =
             match throws with
                 | Strike(framePoints,remaining,PointsComplete) -> updateGameState framePoints GameComplete
-                | Strike(framePoints,remaining,PointsIncomplete) -> updateGameState framePoints (FinalFrameExtraBalls remaining)
+                | Strike(framePoints,remaining,PointsIncomplete) -> updateGameState framePoints (GameActive (FinalFrameExtraBalls remaining))
                 | Spare (framePoints,remaining,PointsComplete) -> updateGameState framePoints GameComplete
-                | Spare (framePoints,remaining,PointsIncomplete) -> updateGameState framePoints (FinalFrameExtraBalls remaining)
+                | Spare (framePoints,remaining,PointsIncomplete) -> updateGameState framePoints (GameActive (FinalFrameExtraBalls remaining))
                 | NormalPoints (points,remaining,PointsComplete) -> updateGameState points GameComplete
-                | NormalPoints (points,remaining,PointsIncomplete) -> updateGameState points (InFrame(remaining,frameNumber,points))
+                | NormalPoints (points,remaining,PointsIncomplete) -> updateGameState points (GameActive (InFrame(remaining,frameNumber,points)))
 
         let advanceStateNormalFrame gameState =
             let completeTheFrame remainingThrows = 
-                InFrame(remainingThrows,frameNumber+1,0)
+                (GameActive (InFrame(remainingThrows,frameNumber+1,0)))
 
             match throws with
                 | Strike (points,remaining,_) -> updateGameState points (completeTheFrame remaining)
                 | Spare (points,remaining,_) -> updateGameState points (completeTheFrame remaining)
                 | NormalPoints (points,remaining,PointsComplete)-> updateGameState points (completeTheFrame remaining)
-                | NormalPoints (points,remaining,PointsIncomplete)-> updateGameState points (InFrame (remaining,frameNumber,points))
+                | NormalPoints (points,remaining,PointsIncomplete)-> updateGameState points (GameActive (InFrame (remaining,frameNumber,points)))
 
         let isFinalFrame = frameNumber = 10
 
@@ -107,16 +107,27 @@ type Game() =
         else
             advanceStateNormalFrame gameState
 
-    let newGame throws = [],InFrame(throws,1,0)
+    let newGame throws = [],(GameActive (InFrame(throws,1,0)))
 
     let getGameState throws = 
         let rec iter gameState =
-            let nextState = advanceState gameState
-            match nextState with
-            |_,GameComplete -> nextState
-            |_,InFrame ([],frame,points) -> nextState
-            |_,InFrame (remaining,frame,points) -> iter nextState
-            |_,FinalFrameExtraBalls _  -> iter nextState
+            let frames,currentFrameState = gameState
+
+            match currentFrameState with
+            | GameComplete -> gameState
+            | GameActive activeFrameState -> 
+                let updateGameState points nextFrameState =
+                    (points::frames),nextFrameState
+
+                let points,nextFrameState = advanceState activeFrameState
+
+                let nextState = updateGameState points nextFrameState
+
+                match nextFrameState with
+                |GameComplete
+                |GameActive(InFrame ([],_,_)) ->nextState
+                |GameActive(_) -> iter nextState
+
         iter (newGame throws)
 
     let scoreForFrame forFrame throws =
@@ -130,16 +141,15 @@ type Game() =
 
     let throw throws pins : int list = 
         if pins < 0 || pins > 10 then invalidArg "pins" "invalid number of pins"
-
+        
         let gameState = getGameState throws
 
         match gameState with
         | _,GameComplete -> invalidArg "pins" "game is complete"
-        | _,FinalFrameExtraBalls _  -> appendThrownPins throws pins
-        | _,InFrame (remaining,frameNumber,previousPins) ->
-            if previousPins + pins > 10 then invalidArg "pins" "invalid number of pins"
-            else
-                appendThrownPins throws pins
+        | _,GameActive(InFrame (remaining,frameNumber,previousPins)) 
+            when previousPins + pins > 10 -> invalidArg "pins" "invalid number of pins"
+        | _,GameActive(_) -> appendThrownPins throws pins
+            
     
     let mutable throws = []
 
