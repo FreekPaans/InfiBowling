@@ -124,9 +124,8 @@ type Game() =
 
                 let nextState = updateGameState points nextFrameState
 
-                match nextFrameState with
-                |GameComplete
-                |GameActive(_) -> iter nextState
+                iter nextState
+
 
         iter (newGame throws)
 
